@@ -7,7 +7,7 @@
 /* Concept: a 3D desk you can turn, zoom and click. The monitor opens the project wheel. Warm paper ground, brick-red accent. */
 :root{--paper:#EEE8DB;--ink:#2B2420;--brick:#B3271B;--soft:#4A423A;
  --display:'Anton','Impact','Arial Narrow',sans-serif;--body:'Outfit',system-ui,sans-serif}
-html,body{height:100%;overflow:hidden}
+html,body{height:100%;overflow:hidden;touch-action:manipulation}
 body{margin:0;background:#110e0d;color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit}
 #stage{position:fixed;inset:0;background:#120e0c}
@@ -46,7 +46,7 @@ button{font:inherit;color:inherit}
 @media (max-width:700px){.hint{font-size:10px;gap:10px;letter-spacing:.12em;bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}.hint span:nth-child(3){display:none}}
 @media (max-width:700px){.credit{display:none}.hint{bottom:calc(env(safe-area-inset-bottom,0px) + 74px)}.reset{left:50%;right:auto;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 26px)}}
 /* tap markers: on touch screens there is no hover, so every clickable object gets a pulsing dot */
-.dot{position:fixed;left:0;top:0;width:30px;height:30px;margin:-15px 0 0 -15px;padding:0;border:0;background:none;border-radius:50%;z-index:40;cursor:pointer;display:none;-webkit-tap-highlight-color:transparent;will-change:transform}
+.dot{position:fixed;left:0;top:0;width:30px;height:30px;margin:-15px 0 0 -15px;padding:0;border:0;background:none;border-radius:50%;z-index:40;cursor:pointer;display:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;will-change:transform}
 body.touch .dot.show{display:block}
 .dot::before{content:"";position:absolute;inset:12px;border-radius:50%;background:rgba(255,255,255,.95);box-shadow:0 0 0 1.5px rgba(20,12,8,.4),0 0 8px rgba(255,255,255,.55)}
 .dot::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(20,12,8,.25);animation:dotp 2.2s ease-out infinite}
@@ -1659,15 +1659,23 @@ $$('[data-nav]').forEach(b=>b.addEventListener('click',()=>{
 }));
 
 /* pointer: one pointer rotates, two pinch */
-const ptrs=new Map();let downAt=null,moved=0,pinch0=0;
+const ptrs=new Map();let downAt=null,moved=0,pinch0=0,mid0=null;
+/* two-finger pan: slide the view along the screen plane, within the same bounds zooming uses */
+function panBy(dx,dy){
+  const e=sph(cam);let f=[cam.target[0]-e[0],cam.target[1]-e[1],cam.target[2]-e[2]];const l=Math.hypot(...f);f=f.map(v=>v/l);
+  let r=[-f[2],0,f[0]];const rl=Math.hypot(...r)||1;r=r.map(v=>v/rl);
+  const u=[r[1]*f[2]-r[2]*f[1],r[2]*f[0]-r[0]*f[2],r[0]*f[1]-r[1]*f[0]];
+  const s=2*cam.radius*Math.tan(cam.fov/2)/CH,room=(home.radius-cam.radius)/(home.radius-home.rMin),lim=[170,70,110];
+  for(let i=0;i<3;i++)cam.target[i]=Math.max(home.t0[i]-lim[i]*room,Math.min(home.t0[i]+lim[i]*room,cam.target[i]-(r[i]*dx-u[i]*dy)*s));
+}
 canvas.addEventListener('pointerdown',e=>{if(state!=='desk')return;lastAct=performance.now();canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(ptrs.size===1){downAt={x:e.clientX,y:e.clientY};moved=0}else{moved=99;const[a,b]=[...ptrs.values()];pinch0=Math.hypot(a.x-b.x,a.y-b.y)}});
+  if(ptrs.size===1){downAt={x:e.clientX,y:e.clientY};moved=0}else{moved=99;const[a,b]=[...ptrs.values()];pinch0=Math.hypot(a.x-b.x,a.y-b.y);mid0={x:(a.x+b.x)/2,y:(a.y+b.y)/2}}});
 canvas.addEventListener('pointermove',e=>{
   if(state!=='desk')return;
   const p=ptrs.get(e.pointerId);
   if(p){lastAct=performance.now();const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
     if(ptrs.size===1){moved+=Math.abs(dx)+Math.abs(dy);cam.theta=Math.max(home.theta-home.sway,Math.min(home.theta+home.sway,cam.theta-dx*.0065));cam.phi=Math.max(home.phiLo,Math.min(home.phiHi,cam.phi-dy*.0045));hint.classList.add('off')}
-    else if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch0>0)zoomAt(pinch0/d,(a.x+b.x)/2,(a.y+b.y)/2);pinch0=d;hint.classList.add('off')}
+    else if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;if(pinch0>0)zoomAt(pinch0/d,mx,my);pinch0=d;if(mid0)panBy(mx-mid0.x,my-mid0.y);mid0={x:mx,y:my};hint.classList.add('off')}
     tip.classList.remove('on');return}
   if(e.pointerType==='mouse'){const g=pick(e.clientX,e.clientY);setHover(g,e.clientX,e.clientY)}
 });
@@ -1675,6 +1683,7 @@ function endPtr(e){
   const had=ptrs.has(e.pointerId);ptrs.delete(e.pointerId);
   if(had&&ptrs.size===0&&downAt&&moved<8&&state==='desk'&&e.type==='pointerup'){const g=pick(e.clientX,e.clientY);if(g&&HOT[g])activate(g)}
   if(ptrs.size===0)downAt=null;
+  mid0=null;pinch0=0;
 }
 canvas.addEventListener('pointerup',endPtr);canvas.addEventListener('pointercancel',endPtr);
 canvas.addEventListener('pointerleave',()=>setHover(null));
