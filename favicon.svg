@@ -1,16 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ff7ab8"/>
-      <stop offset="1" stop-color="#e0267f"/>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffe066"/>
+      <stop offset=".45" stop-color="#f7cf35"/>
+      <stop offset="1" stop-color="#d89a06"/>
+    </linearGradient>
+    <linearGradient id="eraser" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f6c4c4"/>
+      <stop offset="1" stop-color="#e07c7c"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b4b6ba"/>
+      <stop offset="1" stop-color="#8d8f94"/>
+    </linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f3d7b6"/>
+      <stop offset="1" stop-color="#c99a72"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="#2b2420"/>
-  <path d="M26 6h12l7 40H19z" fill="url(#g)"/>
-  <ellipse cx="32" cy="35" rx="7" ry="6" fill="#ffd1e0" opacity=".9"/>
-  <circle cx="31" cy="20" r="4" fill="#ffd1e0" opacity=".85"/>
-  <circle cx="35" cy="28" r="2.2" fill="#ffd1e0" opacity=".7"/>
-  <path d="M26 6h12l1 6H25z" fill="#b3271b"/>
-  <path d="M17 46h30l4 12H13z" fill="#b3271b"/>
-  <rect x="19" y="44" width="26" height="4" rx="1" fill="#8e1f15"/>
+  <g transform="rotate(45 32 32)">
+    <path d="M23 15V8a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v7z" fill="url(#eraser)"/>
+    <rect x="22" y="15" width="20" height="8" rx="1.5" fill="url(#metal)"/>
+    <rect x="22" y="23" width="20" height="24" fill="url(#body)"/>
+    <rect x="25" y="23" width="3" height="24" fill="#fff" opacity=".28"/>
+    <path d="M22 47h20L32 62z" fill="url(#wood)"/>
+    <path d="M28.67 56.5h6.66L32 62z" fill="#3a3a3c"/>
+  </g>
 </svg>
